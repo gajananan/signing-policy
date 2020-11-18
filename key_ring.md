@@ -92,4 +92,9 @@ spec:
 ```
 
 
+### Create resources in yaml in Hubcluster so that secret can be probagated to managed cluster
 
+After following the above steps to fill in resources.yaml, create resources in Hub cluster
+```
+$ oc create -f resources.yaml
+```
