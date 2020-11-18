@@ -1,4 +1,4 @@
-# How to sign polict resources in policy-collection 
+# How to sign YAML resources in policy-collection 
 
  Policies in https://github.com/open-cluster-management/policy-collection
 
