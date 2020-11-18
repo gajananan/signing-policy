@@ -44,7 +44,7 @@ $ export IE_REPO_ROOT=/home/repo/integrity-enforcer
 
 
 
-Sample script `generatio_annotation.sh` to apply signature annotations on YAML resources.
+Sample script `generatio_annotation.sh` to apply signature annotations on YAML resources in a directory.
 
 
 ```
