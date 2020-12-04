@@ -56,7 +56,7 @@ dir = $2
 find $dir -type f -name "*.yaml" | while read file;
 do
   echo Signing  $file
-  $IE_REPO_ROOT/scripts/gpg-annotation-sign.sh $signer "$file"
+  $IE_REPO_ROOT/scripts/gpg-annotation-sign.sh $signer "$file" "$file"
 done
 ```
 
