@@ -26,9 +26,11 @@ $ ./probagate-keyring.sh integrity-verifier-operator-system $(cat /tmp/pubring.g
 
 Pass two parameters 
 1.  Namespace
+
     `integrity-verifier-operator-system`  is the target namespace where verification key would be created in managed cluster. 
      (the namespace where integrity enforcer would be deployed in managed cluster)
         
 2.  Verification key 
-    Pass the encoded content of /tmp/pubring.gpg
+
+    Pass the encoded content of /tmp/pubring.gpg : `$(cat /tmp/pubring.gpg | base64 -w 0)`
         
