@@ -1,0 +1,190 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-integrity
+  annotations:
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+    policy.open-cluster-management.io/categories: CM Configuration Management
+    policy.open-cluster-management.io/controls: CM-2 Baseline Configuration
+spec:
+  remediationAction: enforce
+  disabled: false
+  policy-templates:
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: integrity-og-policy
+      spec:
+        remediationAction: enforce # the policy-template spec.remediationAction is overridden by the preceding parameter value for spec.remediationAction.
+        severity: high
+        object-templates:
+        - complianceType: musthave #musthave
+          objectDefinition:
+            apiVersion: operators.coreos.com/v1
+            kind: OperatorGroup
+            metadata:
+              name: integrity-operator-group
+              namespace: integrity-verifier-operator-system
+            spec:
+              targetNamespaces:
+              - integrity-verifier-operator-system
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: integrity-catrsc-policy
+      spec:
+        remediationAction: enforce # the policy-template spec.remediationAction is overridden by the preceding parameter value for spec.remediationAction.
+        severity: high
+        object-templates:
+        - complianceType: musthave #musthave
+          objectDefinition:
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: CatalogSource
+            metadata:
+              name: integrity-operator-catalog
+              namespace: openshift-marketplace
+            spec:
+              displayName: TRL Test Operators
+              image: quay.io/open-cluster-management/integrity-verifier-operator-index:0.0.4
+              publisher: IBM
+              sourceType: grpc
+              updateStrategy:
+                registryPoll:
+                  interval: 1m
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: integrity-sub-policy
+      spec:
+        remediationAction: enforce # the policy-template spec.remediationAction is overridden by the preceding parameter value for spec.remediationAction.
+        severity: high
+        namespaceSelector:
+          exclude: ["kube-*"]
+          include: ["*"]
+        object-templates:
+        - complianceType: musthave #musthave
+          objectDefinition:
+            apiVersion: operators.coreos.com/v1alpha1
+            kind: Subscription
+            metadata:
+              name: integrity-verifier-operator
+              namespace: integrity-verifier-operator-system
+            spec:
+              channel: alpha
+              installPlanApproval: Automatic
+              name: integrity-verifier-operator
+              source: integrity-operator-catalog
+              sourceNamespace: openshift-marketplace
+              startingCSV: integrity-verifier-operator.v0.0.4
+  - objectDefinition:
+      apiVersion: policy.open-cluster-management.io/v1
+      kind: ConfigurationPolicy
+      metadata:
+        name: integrity-cr-policy
+      spec:
+        remediationAction: enforce # the policy-template spec.remediationAction is overridden by the preceding parameter value for spec.remediationAction.
+        severity: high
+        namespaceSelector:
+          exclude: ["kube-*"]
+          include: ["integrity-verifier-operator-system"]
+        object-templates:
+        - complianceType: musthave #mustnothave
+          objectDefinition:
+            apiVersion: apis.integrityverifier.io/v1alpha1
+            kind: IntegrityVerifier
+            metadata:
+              name: integrity-verifier-server
+            spec:
+              logger:
+                image: quay.io/open-cluster-management/integrity-verifier-logging:0.0.4
+              server:
+                image: quay.io/open-cluster-management/integrity-verifier-server:0.0.4
+              affinity: {}
+              verifierConfig:
+                verifyType: pgp # x509
+                ivAdminUserName: "system:serviceaccount:open-cluster-management-agent-addon:klusterlet-addon-policyctrl"
+                inScopeNamespaceSelector:
+                  include:
+                  - "*"
+                  exclude:
+                  - "kube-*"
+                  - "openshift-*"
+              signPolicy:
+                policies:
+                - namespaces:
+                  - "*"
+                  signers:
+                  - "SampleSigner"
+                - scope: "Cluster"
+                  signers:
+                  - "SampleSigner"
+                signers:
+                - name: "SampleSigner"
+                  secret: keyring-secret
+                  subjects:
+                  - email: "gajan@jp.ibm.com"
+                  - email: "hirokuni.kitahara1@ibm.com"
+              keyRingConfigs:
+              - name: keyring-secret
+              resourceSigningProfiles:
+              - name: policy-rsp
+                protectRules:
+                - match:
+                  - apiGroup: policy.open-cluster-management.io
+                ignoreRules:
+                - match:
+                  - username: "system:serviceaccount:open-cluster-management-agent:*"
+                  - username: "system:serviceaccount:open-cluster-management-agent-addon:*"
+                forceCheckRules:
+                - match:
+                  - apiGroup: policy.open-cluster-management.io
+                    kind: Policy
+                kustomizePatterns:
+                - match:
+                  - apiGroup: policy.open-cluster-management.io
+                    kind: Policy
+                  namePrefix: "*."
+                unprotectAttrs:
+                - match:
+                  - apiGroup: policy.open-cluster-management.io
+                  attrs:
+                  - "metadata.annotations.\"apps.open-cluster-management.io/hosting-deployable\""
+                  - "metadata.annotations.\"apps.open-cluster-management.io/hosting-subscription\""
+                  - "metadata.annotations.\"apps.open-cluster-management.io/sync-source\""
+                  - "metadata.labels.\"policy.open-cluster-management.io/cluster-name\""
+                  - "metadata.labels.\"policy.open-cluster-management.io/cluster-namespace\""
+                  - "metadata.labels.\"policy.open-cluster-management.io/root-policy\""
+                targetNamespaceSelector:
+                  labelSelector:
+                    matchExpressions:
+                    - key: policy.open-cluster-management.io/isClusterNamespace
+                      operator: In
+                      values: ["true"]
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-integrity-policy
+placementRef:
+  name: placement-integrity-policy
+  kind: PlacementRule
+  apiGroup: apps.open-cluster-management.io
+subjects:
+- name: policy-integrity
+  kind: Policy
+  apiGroup: policy.open-cluster-management.io
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-integrity-policy
+spec:
+  clusterConditions:
+  - status: "True"
+    type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions:
+    - {key: environment, operator: In, values: ["dev"]}
