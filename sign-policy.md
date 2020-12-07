@@ -44,7 +44,7 @@ $ export IE_REPO_ROOT=/home/repo/integrity-enforcer
 
 
 
-Sample script `generatio_annotation.sh` to apply signature annotations on YAML resources in a directory.
+Sample script `ocm-sign-policy.sh` to apply signature annotations on YAML resources in a directory.
 
 
 ```
@@ -56,7 +56,7 @@ dir = $2
 find $dir -type f -name "*.yaml" | while read file;
 do
   echo Signing  $file
-  $IE_REPO_ROOT/scripts/gpg-annotation-sign.sh $signer "$file" "$file"
+  $IE_REPO_ROOT/scripts/gpg-annotation-sign.sh $signer "$file"
 done
 ```
 
@@ -64,7 +64,7 @@ Invoke above scripts as below
 
 
 ```
-$./generate_annot.sh signer@enterprise.com <YAML-RESOURCES=DIRECTORY>
+$./ocm-sign-policy.sh signer@enterprise.com <YAML-RESOURCES=DIRECTORY>
 ```
 
 
